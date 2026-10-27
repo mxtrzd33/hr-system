@@ -1,0 +1,54 @@
+﻿services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    depends_on:
+      - frontend
+      - backend
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - frontend-net
+
+  frontend:
+    image: nginx:alpine
+    networks:
+      - frontend-net
+    command: ["/bin/sh", "-c", "printf '%s' '<h1>HR System</h1><p>Система управления персоналом</p><p>Сервис автоматизации HR-процессов запущен.</p>' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"]
+
+  backend:
+    image: hashicorp/http-echo:1.0.0
+    command: ["-listen=:5678", "-text=HR API is running"]
+    networks:
+      - frontend-net
+      - backend-net
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: hrdb
+      POSTGRES_USER: hruser
+      POSTGRES_PASSWORD: hrpass_demo
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backend-net
+
+  redis:
+    image: redis:alpine
+    networks:
+      - backend-net
+
+  notifications:
+    image: hashicorp/http-echo:1.0.0
+    command: ["-listen=:5678", "-text=Notification service is running"]
+    networks:
+      - backend-net
+
+networks:
+  frontend-net:
+  backend-net:
+
+volumes:
+  postgres-data:

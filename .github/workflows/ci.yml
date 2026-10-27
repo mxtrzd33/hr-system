@@ -1,0 +1,36 @@
+﻿name: HR System CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download project
+        uses: actions/checkout@v4
+
+      - name: Check Docker Compose configuration
+        run: docker compose config -q
+
+      - name: Start containers
+        run: docker compose up -d
+
+      - name: Check website
+        run: |
+          for i in {1..15}; do
+            if curl --fail http://localhost:8080; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs
+          exit 1
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down
